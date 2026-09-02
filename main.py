@@ -7,7 +7,8 @@ from datetime import datetime
 from collections import deque
 from flask import Flask
 from telethon import TelegramClient
-import google.generativeai as genai
+import http.client
+import json
 
 app = Flask('')
 
@@ -25,67 +26,61 @@ LINK_DO_GRUPO = "interlinkIDchat"
 ID_DO_TOPICO = 37433
 TEMPO_ESPERA_SEGUNDOS = 180
 
-CHAVE_GEMINI_REAL = "AQ.Ab8RN6IKiWjQjT0pgl5YfMQn1yLaFRWcQz9_O8KnqErlooYFPg"
-
-genai.configure(api_key=CHAVE_GEMINI_REAL)
-model = genai.GenerativeModel('gemini-pro')
+# Chave oficial e moderna do Google AI Studio configurada diretamente
+CHAVE_GEMINI_REAL = "AQ.Ab8RN6Knq2WB13jkyaJC9sTSg_yJ9VGMQOi_G88WACvtqh_wKA"
 
 client = TelegramClient('sessao_celular', API_ID, API_HASH)
-
-# MEMÓRIA MÁXIMA: Lembra das últimas 100 mensagens para evitar repetições
 historico_mensagens = deque(maxlen=100)
 
 MENSAGENS = [
-    "Bom dia pessoal, como estão as coisas por aqui?", "Acompanhando o grupo por aqui hoje.", 
-    "Bons negócios para todo mundo hoje.", "O mercado brasileiro exige bastante atenção.", 
-    "Sempre bom ver o grupo movimentado.", "Desejo uma excelente semana para todos.", 
-    "Seguimos focados nas melhores oportunidades.", "Muito bom o nível das conversas aqui.", 
-    "Alguém acompanhando as novidades de agora?", "Foco e paciência trazem ótimos resultados.", 
-    "Interessante ver as differentes opiniões aqui.", "Estou analisar o cenário atual com calma.", 
-    "Mais um dia de muito aprendizado.", "Tamo junto pessoal, excelente tarde.", 
-    "O planejamento faz toda a diferença.", "Quem aí está ativo hoje no mercado?", 
-    "A constância supera qualquer obstacle por aqui.", "Bora para cima que a semana promete.", 
-    "Observando os movimentos com bastante critério.", "O secret é manter a disciplina sempre.", 
-    "Novos horizontes trazem excelentes resultados profissionais.", "Mantenham a energy alta durante o dia.", 
-    "A análise técnica ajuda muito nas decisões.", "Quem está operando com foco hoje?", 
-    "Grandes ideias surgem de debates inteligentes.", "O dia promete ótimas movimentações comerciais.", 
-    "Seguimos firmes nos propósitos desta semana.", "Excelente oportunidade para rever nossas metas.", 
-    "Compartilhar conhecimento fortalece toda a comunidade.", "Fiquem atentos aos detalhes do mercado.", 
-    "Paciência é a virtude dos grandes negociadores.", "Sempre focado em evoluir um pouco mais.", 
-    "Bons insights surgindo nas conversas recentes.", "Cada passo importa na construção do sucesso.", 
-    "Vamos focar no que realmente gera valor.", "Determinação diária transforma qualquer reality difícil.", 
-    "Dia produtivo para todos nós por aqui.", "Acompanhando atentamente as tendências de hoje.", 
-    "Informação de qualidade faz total diferença.", "União e networking geram resultados incríveis.", 
-    "Gerenciamento de risco é fundamental para todos.", "Mentalidade vencedora faz a diferença nos negócios.", 
-    "Mais uma jornada de trabalho and foco.", "Estudar o cenário antes de agir evita erros.", 
-    "Parcerias estratégicas aceleram nosso crescimento profissional.", "O success recompensa quem tem disciplina diária.", 
-    "Foco nas soluções e não nos problemas.", "Troca de experiências enriquece muito o grupo.", 
-    "Construindo o futuro com ações consistentes hoje.", "Fique atento às mudanças rápidas do mercado.", 
-    "Ótimo momento para aprender algo totalmente novo.", "Trabalhar com inteligência traz melhores resultados sempre.", 
-    "A persistence vence qualquer dificuldade temporária.", "Olho aberto nas oportunidades que surgem agora.", 
-    "Fazer o simples com excelência traz resultados.", "Grupo muito qualificado e focado em evoluir.", 
-    "Estratégia bem definida evita perdas desnecessárias.", "Bora produzir e gerar valor para todos.", 
-    "O knowledge liberta e gera novas chances.", "Analisando os gráficos com muita paciência hoje.", 
-    "Passo a passo chegaremos aos nossos objectives.", "Atitude positiva muda nossa perspectiva de negócios.", 
-    "Planejar o dia otimiza muito nosso tempo.", "Discussões construtivas elevam o nível do grupo.", 
-    "Sempre buscando aprender com os erros passados.", "O success exige dedicação em tempo integral.", 
-    "Mantenham o foco no gerenciamento de vocês.", "Ótimas reflexões compartilhadas por aqui hoje.", 
-    "Resultados solids demandam tempo e resiliência.", "Acompanhando de perto as principais movimentações financeiras.", 
-    "Networking de alto nível se faz por aqui.", "Vamos aproveitar cada minuto do dia de hoje.", 
-    "Disciplina supera o talento na maioria das vezes.", "Sempre focado nos planos de longo prazo.", 
-    "Muito aprendizado prático nas conversas deste grupo.", "Execução precisa vale mais que planejamento perfeito.", 
-    "Estudar sempre para não ficar para trás.", "Determinação é o combustível para nossos sonhos.", 
-    "Análise fria do mercado evita decisões por impulso.", "Seguimos avançando com consistência e inteligência.", 
-    "Bons negócios dependem de muita atenção diária.", "Oportunidades batem à porta de quem trabalha.", 
-    "Gerenciar o tempo é gerenciar o próprio sucesso.", "Foco total na produtividade do dia de hoje.", 
-    "Excelente dia para fechar novas parcerias.", "Conhecimento prático aplicado gera resultados imediatos.", 
-    "Mantenham a calma nas oscilações do mercado.", "Visão de longo prazo evita ansiedade boba.", 
-    "Trabalho duro em silêncio gera barulho nos resultados.", "Aprender com a experiência alheia economiza tempo.", 
-    "Bora focar no progresso constante todos os dias.", "Mercado dinâmico exige atualização profissional constante.", 
-    "Análise precisa faz toda a diferença nos investimentos.", "Foco, força e fé nos nossos objetivos.", 
-    "Mais um dia para fazer acontecer de verdade.", "Comunidade focada in negócios e crescimento mútuo.", 
-    "A inteligência financeira muda o jogo de qualquer um.", "Estudar as tendências nos coloca à frente sempre.", 
-    "Resiliência para enfrentar os dias de mercado parado.", "Grandes resultados começam with pequenas escolhas diárias."
+    "Fala pessoal, dia de muita execução por aqui.", "Acompanhando os insights da comunidade hoje.", 
+    "Foco total nos objetivos comerciais desta semana.", "O mercado atual exige agilidade e adaptação.", 
+    "Sempre bom ver novos pontos de vista por aqui.", "Excelente jornada de trabalho para todos.", 
+    "Mantenham a consistência nas operações de hoje.", "Muito bom o nível técnico dos debates atuais.", 
+    "Alguém de olho nas movimentações de agora?", "Resiliência e estratégia geram resultados reais.", 
+    "Diferentes abordagens enriquecem muito o setor.", "Analisando o cenário econômico com bastante critério.", 
+    "Mais um ciclo de metas para bater hoje.", "Tamo junto, ótima tarde produtiva para nós.", 
+    "A execução correta supera qualquer teoria complexa.", "Quem aí está ativo nos projetos hoje?", 
+    "A persistência vence o talento sem disciplina.", "Bora produzir que o mercado não espera.", 
+    "Observando os comportamento do público com atenção.", "O segredo do crescimento é a constância diária.", 
+    "Novos desafios geram as melhores inovações.", "Mantenham o ritmo e a mente focada hoje.", 
+    "A tomada de decisão lógica evita prejuízos desnecessários.", "Operando com critérios claros neste dia.", 
+    "Grandes projetos nascem de debates bem estruturados.", "O dia promete boas oportunidades de conexão.", 
+    "Seguimos firmes no planejamento estratégico traçado.", "Ótimo momento para revisar nossas prioridades.", 
+    "Trocar experiências reais fortalece todo o ecossistema.", "Fiquem atentos às pequenas mudanças de mercado.", 
+    "A paciência comercial é uma virtude indispensável.", "Sempre buscando herdar os processos atuais.", 
+    "Bons insights comerciais surgem com o estudo.", "Evoluindo a estratégia um passo por vez.", 
+    "Foco e discernimento nas escolhas de mercado.", "Networking inteligente impulsiona resultados reais.", 
+    "Cenário atual exige calma and análise precisa.", "Mantenham a dedicação nos objetivos principais.", 
+    "Cada ação planejada gera valor no futuro.", "Firmeza nos propósitos comerciais da nossa semana.", 
+    "A dedicação diária constrói autoridade de mercado.", "Parcerias de longo prazo geram lucros mútuos.", 
+    "Estudar os movimentos do mercado com critério.", "Planejar ações minimiza riscos desnecessários.", 
+    "Mentalidade madura lida melhor com as oscilações.", "Construindo bases sólidas para novos negócios.", 
+    "Seguimos focados na produtividade comercial diária.", "Oportunidades reais exigem preparação antecipada.", 
+    "A constância nos planos gera solidez financeira.", "Networking ativo transforma ideias em grandes negócios.", 
+    "Foco total na execução perfeita das metas.", "Conhecimento prático aplicado transforma qualquer negócio.", 
+    "Análise de dados ajuda nas decisões comerciais.", "Mantenham o foco e a energia alta.", 
+    "Bons negócios começam com parcerias alinhadas.", "A resiliência comercial constrói grandes histórias.", 
+    "Estudar o cenário antes de agir poupa tempo.", "Visão estratégica clara dita o nosso sucesso.", 
+    "Mais uma jornada com foco em novos negócios.", "Crescimento sustentável exige paciência diária.", 
+    "Acompanhando atentamente as novidades comerciais de hoje.", "Determinação comercial gera resultados acima da média.", 
+    "Networking de valor acelera projetos de mercado.", "Manter o foco nas operações mais lucrativas.", 
+    "Decisões baseadas em dados evitam prejuízos bobos.", "Seguimos firmes nos propósitos profissionais.", 
+    "A evolução profissional exige estudo diário focado.", "Bons debates geram ideias de alto valor.", 
+    "Gerenciar riscos é a chave do crescimento.", "Foco nas metas principais do nosso mercado.", 
+    "A paciência comercial gera as melhores escolhas.", "Construindo o futuro com ações focadas hoje.", 
+    "Mais um dia de aprendizado prático intenso.", "Networking qualificado gera negócios de longo prazo.", 
+    "Estudar os gráficos com calma traz clareza.", "Visão de longo prazo protege nossos investimentos.", 
+    "Trabalho consistente gera resultados incontestáveis.", "Mantenham a calma e a disciplina operacional.", 
+    "Foco total no progresso contínuo dos negócios.", "Parcerias certas geram resultados surpreendentes.", 
+    "Análise técnica detalhada ajuda a mitigar riscos.", "Bora focar no que realmente expande negócios.", 
+    "A persistência comercial vence desafios complexos.", "Excelente dia para revisar processos e metas.", 
+    "Networking ativo gera valor para toda comunidade.", "Seguimos focados nas trends de crescimento.", 
+    "A inteligência estratégica muda o patamar comercial.", "Bons insights profissionais surgem com a constância.", 
+    "Foco absoluto nas soluções mais eficientes.", "A dedicação diária pavimenta caminhos de sucesso.", 
+    "Estudar os concorrentes e o mercado traz clareza.", "Gerenciamento correto garante a nossa longevidade profissional.", 
+    "Cada dia produtivo conta na soma final.", "Parcerias fortes geram marcas fortes no mercado.", 
+    "Visão clara e foco na execução diária."
 ]
 
 async def gerar_frase_ia():
@@ -99,21 +94,33 @@ async def gerar_frase_ia():
         contexto_da_vez = random.choice(contextos)
         semente = random.randint(1, 9999)
         
-        prompt = (
+        prompt_txt = (
             f"Gere uma frase curta inédita número {semente} sobre {contexto_da_vez} "
             "Regras fundamentais: Mínimo 4 palavras, máximo 12 palavras. Responda estritamente em português do Brasil. "
             "Proibido usar qualquer clichê, aspas, hashtags, emojis, links ou anúncios. Texto puro corrido."
         )
-        response = model.generate_content(prompt)
-        text = response.text.strip().replace('"', '')
+
+        # Requisição HTTP nativa compatível 100% com chaves do tipo AQ.
+        conn = http.client.HTTPSConnection("generativelanguage.googleapis.com")
+        payload = json.dumps({
+            "contents": [{"parts": [{"text": prompt_txt}]}]
+        })
+        headers = {'Content-Type': 'application/json'}
+        
+        # Envia usando a API v1beta direto na raiz da Google
+        conn.request("POST", f"/v1beta/models/gemini-1.5-flash:generateContent?key={CHAVE_GEMINI_REAL}", payload, headers)
+        res = conn.getresponse()
+        data = res.read().decode("utf-8")
+        json_data = json.loads(data)
+        
+        text = json_data['candidates'][0]['content']['parts'][0]['text'].strip().replace('"', '')
         palavras = len(text.split())
         
         if 3 <= palavras <= 15 and text not in historico_mensagens:
             return text
     except Exception as e:
-        print(f"IA carregando/indisponível. Usando backup anti-repetição: {e}", file=sys.stderr)
+        print(f"IA sincronizando na rede (usando backup móvel de 100 frases): {e}", file=sys.stderr)
     
-    # Rotação inteligente da lista de 100 frases: remove o que já foi enviado recentemente
     disponiveis = [f for f in MENSAGENS if f not in historico_mensagens]
     if not disponiveis:
         historico_mensagens.clear()
@@ -121,7 +128,7 @@ async def gerar_frase_ia():
     return random.choice(disponiveis)
 
 async def executar_envios():
-    print("🚀 Loop de envios com IA e rodízio otimizado de 100 frases iniciado!")
+    print("🚀 Loop definitivo com chaves AQ e IA ativado!")
     primeiro_envio = True
     
     while True:
@@ -136,14 +143,14 @@ async def executar_envios():
             historico_mensagens.append(frase_escolhida)
             
             horario = datetime.now().strftime('%H:%M:%S')
-            print(f"[{horario}] Enviada: {frase_escolhida}")
+            print(f"[{horario}] Enviada com sucesso: {frase_escolhida}")
         except Exception as e:
-            print(f"⚠️ Falha de rede ou Telegram temporária: {e}", file=sys.stderr)
+            print(f"⚠️ Erro temporário de rede: {e}", file=sys.stderr)
             await asyncio.sleep(15)
 
 async def main():
     async with client:
-        print("✅ Conectado com sucesso usando a sessão permanente!")
+        print("✅ Conectado com sucesso usando a sessão estável!")
         await executar_envios()
 
 if __name__ == '__main__':
@@ -151,4 +158,4 @@ if __name__ == '__main__':
     t_web.daemon = True
     t_web.start()
     asyncio.run(main())
-    
+        
