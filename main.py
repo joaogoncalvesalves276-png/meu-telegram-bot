@@ -26,7 +26,6 @@ LINK_DO_GRUPO = "interlinkIDchat"
 ID_DO_TOPICO = 37433
 TEMPO_ESPERA_SEGUNDOS = 180
 
-# Chave oficial e moderna do Google AI Studio configurada diretamente
 CHAVE_GEMINI_REAL = "AQ.Ab8RN6Knq2WB13jkyaJC9sTSg_yJ9VGMQOi_G88WACvtqh_wKA"
 
 client = TelegramClient('sessao_celular', API_ID, API_HASH)
@@ -41,7 +40,7 @@ MENSAGENS = [
     "Diferentes abordagens enriquecem muito o setor.", "Analisando o cenário econômico com bastante critério.", 
     "Mais um ciclo de metas para bater hoje.", "Tamo junto, ótima tarde produtiva para nós.", 
     "A execução correta supera qualquer teoria complexa.", "Quem aí está ativo nos projetos hoje?", 
-    "A persistência vence o talento sem disciplina.", "Bora produzir que o mercado não espera.", 
+    "A persistence vence o talento sem disciplina.", "Bora produzir que o mercado não espera.", 
     "Observando os comportamento do público com atenção.", "O segredo do crescimento é a constância diária.", 
     "Novos desafios geram as melhores inovações.", "Mantenham o ritmo e a mente focada hoje.", 
     "A tomada de decisão lógica evita prejuízos desnecessários.", "Operando com critérios claros neste dia.", 
@@ -88,7 +87,7 @@ async def gerar_frase_ia():
         contextos = [
             "mentalidade financeira avançada e sutil.",
             "psicologia aplicada à disciplina, foco e hábitos maduros.",
-            "uma pergunta retórica ou aberta de alto nível para gerar debates profissionais rápidos.",
+            "uma pergunta retórica de alto nível para gerar debates profissionais rápidos.",
             "visão estratégica de mercado, paciência comercial e tomada de decisão lógica."
         ]
         contexto_da_vez = random.choice(contextos)
@@ -100,27 +99,25 @@ async def gerar_frase_ia():
             "Proibido usar qualquer clichê, aspas, hashtags, emojis, links ou anúncios. Texto puro corrido."
         )
 
-        # Requisição HTTP nativa compatível 100% com chaves do tipo AQ.
         conn = http.client.HTTPSConnection("generativelanguage.googleapis.com")
-        payload = json.dumps({
-            "contents": [{"parts": [{"text": prompt_txt}]}]
-        })
+        payload = json.dumps({"contents": [{"parts": [{"text": prompt_txt}]}]})
         headers = {'Content-Type': 'application/json'}
         
-        # Envia usando a API v1beta direto na raiz da Google
         conn.request("POST", f"/v1beta/models/gemini-1.5-flash:generateContent?key={CHAVE_GEMINI_REAL}", payload, headers)
-        res = conn.getresponse()
+        res = conn.getcall() if hasattr(conn, 'getcall') else conn.getresponse()
         data = res.read().decode("utf-8")
         json_data = json.loads(data)
         
-        text = json_data['candidates'][0]['content']['parts'][0]['text'].strip().replace('"', '')
-        palavras = len(text.split())
-        
-        if 3 <= palavras <= 15 and text not in historico_mensagens:
-            return text
+        # AJUSTE DA LEITURA DO ARRAYS COM ÍNDICES REAIS [0]
+        if 'candidates' in json_data and len(json_data['candidates']) > 0:
+            text = json_data['candidates'][0]['content']['parts'][0]['text'].strip().replace('"', '')
+            palavras = len(text.split())
+            if 3 <= palavras <= 15 and text not in historico_mensagens:
+                return text
     except Exception as e:
-        print(f"IA sincronizando na rede (usando backup móvel de 100 frases): {e}", file=sys.stderr)
+        print(f"Modo de segurança acionado: {e}", file=sys.stderr)
     
+    # Plano B Inteligente: Garante o envio imediato da lista sem travar o loop
     disponiveis = [f for f in MENSAGENS if f not in historico_mensagens]
     if not disponiveis:
         historico_mensagens.clear()
@@ -128,7 +125,7 @@ async def gerar_frase_ia():
     return random.choice(disponiveis)
 
 async def executar_envios():
-    print("🚀 Loop definitivo com chaves AQ e IA ativado!")
+    print("🚀 Loop definitivo com chaves AQ e leitura corrigida de JSON ativo!")
     primeiro_envio = True
     
     while True:
@@ -145,7 +142,7 @@ async def executar_envios():
             horario = datetime.now().strftime('%H:%M:%S')
             print(f"[{horario}] Enviada com sucesso: {frase_escolhida}")
         except Exception as e:
-            print(f"⚠️ Erro temporário de rede: {e}", file=sys.stderr)
+            print(f"⚠️ Falha técnica: {e}", file=sys.stderr)
             await asyncio.sleep(15)
 
 async def main():
@@ -158,4 +155,4 @@ if __name__ == '__main__':
     t_web.daemon = True
     t_web.start()
     asyncio.run(main())
-        
+    
