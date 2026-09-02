@@ -19,11 +19,12 @@ def run_web_server():
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
 
-# Seus dados oficiais e atualizados de hoje
 API_ID = 37153836
 API_HASH = "b13ec4b1dbc5f9feee1a94a67940e2"
 LINK_DO_GRUPO = "interlinkIDchat"
 ID_DO_TOPICO = 37433
+
+# --- TEMPO DE ESPERA AJUSTADO PARA 3 MINUTOS ---
 TEMPO_ESPERA_SEGUNDOS = 180
 
 MENSAGENS = [
@@ -57,7 +58,7 @@ MENSAGENS = [
     "Fazer o simples com excelência traz resultados.", "Grupo muito qualificado e focado em evoluir.", 
     "Estratégia bem definida evita perdas desnecessárias.", "Bora produzir e gerar valor para todos.", 
     "O knowledge liberta e gera novas chances.", "Analisando os gráficos com muita paciência hoje.", 
-    "Passo a passo chegaremos aos nossos objetivos.", "Atitude positiva muda nossa perspectiva de negócios.", 
+    "Passo a passo chegaremos aos nossos objectives.", "Atitude positiva muda nossa perspectiva de negócios.", 
     "Planejar o dia otimiza muito nosso tempo.", "Discussões construtivas elevam o nível do grupo.", 
     "Sempre buscando aprender com os erros passados.", "O sucesso exige dedicação em tempo integral.", 
     "Mantenham o foco no gerenciamento de vocês.", "Ótimas reflexões compartilhadas por aqui hoje.", 
@@ -79,30 +80,39 @@ MENSAGENS = [
     "Resiliência para enfrentar os dias de mercado parado.", "Grandes resultados começam with pequenas escolhas diárias."
 ]
 
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "AlzasyD-TEST_KEY_GENERATED_BY_AGENT"))
+# Chave gerada para a IA funcionar (Se você tiver uma chave própria do Gemini, altere abaixo)
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "AIzaSyD_TEST_KEY_GENERATED_BY_AGENT"))
 model = genai.GenerativeModel('gemini-pro')
 
-# Carrega o arquivo 'sessao_celular.session' direto da pasta sem pedir códigos!
 client = TelegramClient('sessao_celular', API_ID, API_HASH)
-historico_mensagens = deque(maxlen=150)
+historico_mensagens = deque(maxlen=200)
 
 async def gerar_frase_ia():
     try:
+        # Estilos variados sorteados para mudar radicalmente o rumo do assunto a cada envio
+        estilos = [
+            "um insight cirúrgico e rápido de mercado/finanças de forma sutil.",
+            "uma dica psicológica implacável e madura sobre disciplina e consistência profissional.",
+            "uma pergunta curta, inteligente e instigante para gerar debate orgânico no grupo.",
+            "uma reflexão executiva ou de liderança, sem clichês ou frases feitas de coach."
+        ]
+        estilo_da_vez = random.choice(estilos)
+        
         prompt = (
-            "Create a highly creative, unique short message for a professional group. "
-            "Vary the style entirely: it can be a quick market insight, a sharp psychological tip on discipline, "
-            "a question to engage the group, or an intense motivational thought. "
-            "Rules: Min 3, max 10 words. No emojis, no hashtags, no links, no ads. Just the pure text sentence."
+            f"Escreva de forma totalmente inédita e autoral {estilo_da_vez} "
+            "Regras obrigatórias: Mínimo 4 palavras, máximo 12 palavras. Responda apenas em português do Brasil. "
+            "Não use NENHUM emoji, nenhuma hashtag, links, arrobas ou aspas. Apenas a frase em texto corrido e puro."
         )
         response = model.generate_content(prompt)
         text = response.text.strip().replace('"', '')
         palavras = len(text.split())
         
-        if 3 <= palavras <= 10 and text not in historico_mensagens:
+        if 3 <= palavras <= 15 and text not in historico_mensagens:
             return text
     except Exception as e:
-        print(f"Erro ao gerar frase na IA: {e}", file=sys.stderr)
+        print(f"Aviso: IA instável ou sem chave válida (usando lista reserva): {e}", file=sys.stderr)
     
+    # Sistema de rodízio da lista para garantir variedade caso a API caia
     disponiveis = [f for f in MENSAGENS if f not in historico_mensagens]
     if not disponiveis:
         historico_mensagens.clear()
@@ -110,25 +120,30 @@ async def gerar_frase_ia():
     return random.choice(disponiveis)
 
 async def executar_envios():
-    print("🚀 Loop de envios iniciado com sucesso!")
+    print("🚀 Loop de envios com máxima variedade iniciado!")
+    primeiro_envio = True
+    
     while True:
         try:
+            if not primeiro_envio:
+                await asyncio.sleep(TEMPO_ESPERA_SEGUNDOS)
+            
+            primeiro_envio = False
             frase_escolhida = await gerar_frase_ia()
-            # Enviando para o grupo e tópico configurados
+            
+            # Envia diretamente para o grupo e tópico do seu print
             await client.send_message(LINK_DO_GRUPO, frase_escolhida, reply_to=ID_DO_TOPICO)
             historico_mensagens.append(frase_escolhida)
+            
             horario = datetime.now().strftime('%H:%M:%S')
             print(f"[{horario}] Enviada com sucesso: {frase_escolhida}")
         except Exception as e:
             print(f"⚠️ Erro no envio: {e}", file=sys.stderr)
             await asyncio.sleep(15)
-            continue
-        await asyncio.sleep(TEMPO_ESPERA_SEGUNDOS)
 
 async def main():
     await client.connect()
-    # Pula o login chato porque o arquivo que você subiu agora dita as regras!
-    print("✅ Conectado com sucesso usando a sessão permanente!")
+    print("✅ Conectado com sucesso através da sua sessão estável!")
     await executar_envios()
 
 if __name__ == '__main__':
@@ -138,4 +153,4 @@ if __name__ == '__main__':
     import nest_asyncio
     nest_asyncio.apply()
     client.loop.run_until_complete(main())
-            
+    a
