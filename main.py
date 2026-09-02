@@ -55,7 +55,7 @@ MENSAGENS = [
     "A persistence vence qualquer dificuldade temporária.", "Olho aberto nas oportunidades que surgem agora.", 
     "Fazer o simples com excelência traz resultados.", "Grupo muito qualificado e focado em evoluir.", 
     "Estratégia bem definida evita perdas desnecessárias.", "Bora produzir e gerar valor para todos.", 
-    "O conhecimento liberta e gera novas chances.", "Analisando os gráficos com muita paciência hoje.", 
+    "O knowledge liberta e gera novas chances.", "Analisando os gráficos com muita paciência hoje.", 
     "Passo a passo chegaremos aos nossos objetivos.", "Atitude positiva muda nossa perspectiva de negócios.", 
     "Planejar o dia otimiza muito nosso tempo.", "Discussões construtivas elevam o nível do grupo.", 
     "Sempre buscando aprender com os erros passados.", "O sucesso exige dedicação em tempo integral.", 
@@ -123,7 +123,11 @@ async def executar_envios():
         await asyncio.sleep(TEMPO_ESPERA_SEGUNDOS)
 
 async def main():
-    await client.start()
+    await client.connect()
+    if not await client.is_user_authorized():
+        # Autenticação direta com seus dados reais de acesso
+        await client.sign_in(phone='+5574981222350', code='43077')
+    print("✅ Autenticação realizada com sucesso!")
     await executar_envios()
 
 if __name__ == '__main__':
@@ -133,4 +137,3 @@ if __name__ == '__main__':
     import nest_asyncio
     nest_asyncio.apply()
     client.loop.run_until_complete(main())
-  
