@@ -90,15 +90,16 @@ async def executar_envios():
             await asyncio.sleep(15)
 
 async def main():
-    await client.connect()
-    print("✅ Conectado com sucesso usando a sessão permanente!")
-    await executar_envios()
+    # CORREÇÃO DO TIMEOUT: Inicialização envelopada em gerenciador assíncrono oficial
+    async with client:
+        print("✅ Conectado com sucesso usando a sessão permanente!")
+        await executar_envios()
 
 if __name__ == '__main__':
     t_web = threading.Thread(target=run_web_server)
     t_web.daemon = True
     t_web.start()
-    import nest_asyncio
-    nest_asyncio.apply()
-    client.loop.run_until_complete(main())
+    
+    # Executa o loop principal corrigido
+    asyncio.run(main())
     
