@@ -12,13 +12,8 @@ import json
 
 app = Flask('')
 
-@app.route('/')
-def home():
-    return "Bot vivo!"
-
-def run_web_server():
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host='0.0.0.0', port=port)
+# O Render exige ler a porta da variável "PORT" (padrão 10000 do Render, alterado de 8080 para compatibilidade)
+PORT = int(os.environ.get("PORT", 10000))
 
 API_ID = 37153836
 API_HASH = "b13ec4b1dbc5f9feee1a94a67940e2"
@@ -40,7 +35,7 @@ MENSAGENS = [
     "Diferentes abordagens enriquecem muito o setor.", "Analisando o cenário econômico com bastante critério.", 
     "Mais um ciclo de metas para bater hoje.", "Tamo junto, ótima tarde produtiva para nós.", 
     "A execução correta supera qualquer teoria complexa.", "Quem aí está ativo nos projetos hoje?", 
-    "A persistence vence o talento sem disciplina.", "Bora produzir que o mercado não espera.", 
+    "A persistência vence o talento sem disciplina.", "Bora produzir que o mercado não espera.", 
     "Observando os comportamento do público com atenção.", "O segredo do crescimento é a constância diária.", 
     "Novos desafios geram as melhores inovações.", "Mantenham o ritmo e a mente focada hoje.", 
     "A tomada de decisão lógica evita prejuízos desnecessários.", "Operando com critérios claros neste dia.", 
@@ -49,7 +44,7 @@ MENSAGENS = [
     "Trocar experiências reais fortalece todo o ecossistema.", "Fiquem atentos às pequenas mudanças de mercado.", 
     "A paciência comercial é uma virtude indispensável.", "Sempre buscando herdar os processos atuais.", 
     "Bons insights comerciais surgem com o estudo.", "Evoluindo a estratégia um passo por vez.", 
-    "Foco e discernimento nas escolhas de mercado.", "Networking inteligente impulsiona resultados reais.", 
+    "Foco e discernimento nos escolhas de mercado.", "Networking inteligente impulsiona resultados reais.", 
     "Cenário atual exige calma and análise precisa.", "Mantenham a dedicação nos objetivos principais.", 
     "Cada ação planejada gera valor no futuro.", "Firmeza nos propósitos comerciais da nossa semana.", 
     "A dedicação diária constrói autoridade de mercado.", "Parcerias de longo prazo geram lucros mútuos.", 
@@ -82,12 +77,16 @@ MENSAGENS = [
     "Visão clara e foco na execução diária."
 ]
 
+@app.route('/')
+def home():
+    return "Bot vivo e respondendo!", 200
+
 async def gerar_frase_ia():
     try:
         contextos = [
             "mentalidade financeira avançada e sutil.",
             "psicologia aplicada à disciplina, foco e hábitos maduros.",
-            "uma pergunta retórica de alto nível para gerar debates profissionais rápidos.",
+            "uma pergunta retórica ou aberta de alto nível para gerar debates profissionais rápidos.",
             "visão estratégica de mercado, paciência comercial e tomada de decisão lógica."
         ]
         contexto_da_vez = random.choice(contextos)
@@ -100,24 +99,24 @@ async def gerar_frase_ia():
         )
 
         conn = http.client.HTTPSConnection("generativelanguage.googleapis.com")
-        payload = json.dumps({"contents": [{"parts": [{"text": prompt_txt}]}]})
+        payload = json.dumps({
+            "contents": [{"parts": [{"text": prompt_txt}]}]
+        })
         headers = {'Content-Type': 'application/json'}
         
         conn.request("POST", f"/v1beta/models/gemini-1.5-flash:generateContent?key={CHAVE_GEMINI_REAL}", payload, headers)
-        res = conn.getcall() if hasattr(conn, 'getcall') else conn.getresponse()
+        res = conn.getresponse()
         data = res.read().decode("utf-8")
         json_data = json.loads(data)
         
-        # AJUSTE DA LEITURA DO ARRAYS COM ÍNDICES REAIS [0]
-        if 'candidates' in json_data and len(json_data['candidates']) > 0:
-            text = json_data['candidates'][0]['content']['parts'][0]['text'].strip().replace('"', '')
-            palavras = len(text.split())
-            if 3 <= palavras <= 15 and text not in historico_mensagens:
-                return text
+        text = json_data['candidates'][0]['content']['parts'][0]['text'].strip().replace('"', '')
+        palavras = len(text.split())
+        
+        if 3 <= palavras <= 15 and text not in historico_mensagens:
+            return text
     except Exception as e:
-        print(f"Modo de segurança acionado: {e}", file=sys.stderr)
+        print(f"IA sincronizando na rede (usando backup móvel de 100 frases): {e}", file=sys.stderr)
     
-    # Plano B Inteligente: Garante o envio imediato da lista sem travar o loop
     disponiveis = [f for f in MENSAGENS if f not in historico_mensagens]
     if not disponiveis:
         historico_mensagens.clear()
@@ -125,34 +124,40 @@ async def gerar_frase_ia():
     return random.choice(disponiveis)
 
 async def executar_envios():
-    print("🚀 Loop definitivo com chaves AQ e leitura corrigida de JSON ativo!")
-    primeiro_envio = True
-    
-    while True:
-        try:
-            if not primeiro_envio:
-                await asyncio.sleep(TEMPO_ESPERA_SEGUNDOS)
-            
-            primeiro_envio = False
-            frase_escolhida = await gerar_frase_ia()
-            
-            await client.send_message(LINK_DO_GRUPO, frase_escolhida, reply_to=ID_DO_TOPICO)
-            historico_mensagens.append(frase_escolhida)
-            
-            horario = datetime.now().strftime('%H:%M:%S')
-            print(f"[{horario}] Enviada com sucesso: {frase_escolhida}")
-        except Exception as e:
-            print(f"⚠️ Falha técnica: {e}", file=sys.stderr)
-            await asyncio.sleep(15)
-
-async def main():
+    print("🚀 Loop definitivo com chaves AQ e IA ativado!")
     async with client:
         print("✅ Conectado com sucesso usando a sessão estável!")
-        await executar_envios()
+        primeiro_envio = True
+        
+        while True:
+            try:
+                if not primeiro_envio:
+                    await asyncio.sleep(TEMPO_ESPERA_SEGUNDOS)
+                
+                primeiro_envio = False
+                frase_escolhida = await gerar_frase_ia()
+                
+                await client.send_message(LINK_DO_GRUPO, frase_escolhida, reply_to=ID_DO_TOPICO)
+                historico_mensagens.append(frase_escolhida)
+                
+                horario = datetime.now().strftime('%H:%M:%S')
+                print(f"[{horario}] Enviada com sucesso: {frase_escolhida}")
+            except Exception as e:
+                print(f"⚠️ Erro temporário de rede: {e}", file=sys.stderr)
+                await asyncio.sleep(15)
+
+def iniciar_loop_async():
+    # Cria e gerencia o loop asyncio isolado para o Telethon dentro da thread
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(executar_envios())
 
 if __name__ == '__main__':
-    t_web = threading.Thread(target=run_web_server)
-    t_web.daemon = True
-    t_web.start()
-    asyncio.run(main())
+    # Dispara a thread do Telegram em paralelo para não bloquear o servidor Flask principal
+    t_bot = threading.Thread(target=iniciar_loop_async)
+    t_bot.daemon = True
+    t_bot.start()
     
+    # Inicia o Flask na thread principal escutando a porta dinâmica obrigatória do Render
+    app.run(host='0.0.0.0', port=PORT)
+    w
